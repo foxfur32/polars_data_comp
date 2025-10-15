@@ -1,0 +1,39 @@
+import polars as pl
+
+def compare_polars_dfs(df1: pl.DataFrame, df2: pl.DataFrame):
+    # --- Step 1. Compare column names ---
+    cols1 = df1.columns
+    cols2 = df2.columns
+    identical_cols = cols1 == cols2
+
+    print(f"Columns identical? {identical_cols}")
+    if not identical_cols:
+        only_in_df1 = set(cols1) - set(cols2)
+        only_in_df2 = set(cols2) - set(cols1)
+        print("🟦 Columns only in df1:", sorted(only_in_df1))
+        print("🟨 Columns only in df2:", sorted(only_in_df2))
+
+    # --- Step 2. Compare values for shared columns ---
+    common_cols = list(set(cols1) & set(cols2))
+    diff_cols = []
+
+    for col in common_cols:
+        # Compare column values (null-safe)
+        if not df1[col].series_equal(df2[col], null_equal=True):
+            diff_cols.append(col)
+
+    if diff_cols:
+        print("⚠️ Columns with different values:", diff_cols)
+    else:
+        print("✅ All common columns have identical values.")
+
+    return {
+        "columns_identical": identical_cols,
+        "different_value_columns": diff_cols
+    }
+
+# Example
+df1 = pl.DataFrame({"a": [1, 2, 3], "b": [10, 20, 30], "c": [100, 200, 300]})
+df2 = pl.DataFrame({"a": [1, 2, 3], "b": [10, 25, 30], "d": [400, 500, 600]})
+
+result = compare_polars_dfs(df1, df2)
